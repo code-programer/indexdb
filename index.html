@@ -1,0 +1,123 @@
+<html>
+<body>
+<input id="st" placeholder="Write text to set" type="text"><input id="si" type="number"><button onclick="set()">SET</button>
+<h2>All Objects</h2><button onclick="reload()">RELOAD</button>
+<ul id="list"></ul>
+</body>
+<script>
+function reload(){
+	var els = indexedDB.selectAll(true);
+}
+function set(){
+	indexedDB.insert(document.getElementById("si").value, document.getElementById("st").value)
+	reload()
+}
+
+window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.msIdexedDB;
+if(!'indexedDB' in window){
+	console.log("No IndexedDB")
+}
+
+window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.moxIDBTransaction || window.msIDBTransaction;
+
+window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.mozIDBKeyRange || window.msIDBKeyRange;
+
+indexedDB.db = null;
+
+indexedDB.onerror = function(e){
+	console.error("IndexedDB error: " + e)
+}
+
+var req = window.indexedDB.open("lista", 1);
+
+req.onupgradeneeded = function(event){
+	var db = event.target.result;
+	db.createObjectStore("lista", { keyPath: "id", autoIncrement: true });
+}
+
+req.onsuccess = function(event){
+	window.indexedDB.db = event.target.result;
+}
+
+req.onerror = window.indexedDB.onerror;
+
+indexedDB.insert = function(id, text){
+	var db = window.indexedDB.db;
+	var trans = db.transaction("lista", "readwrite");
+	var store = trans.objectStore("lista");
+	
+	var request = store.put({ "id": id, "text": text })
+	
+	request.onsuccess = function(e){
+		console.log(e)
+	}
+
+	request.onerror = function(e){
+		console.error("Error Adding: " + e)
+	}
+}
+
+indexedDB.selectById = function(id, callback){
+	var db = window.indexedDB.db;
+	var trans = db.transaction('lista', 'readonly');
+	var store = trans.objectStore('lista');
+	
+	var request = store.get(id);
+
+	request.onsuccess = function(e){
+		if(callback){
+			callback(e.target.result)
+		}
+		else{
+			console.log(e.target.result)
+		}
+	}
+	request.onerror = function(e){
+		if(callback){
+			callback("ERROR: " + e);
+		}
+		else{
+			console.error("ERROR: " + e)
+		}
+	}
+}
+
+indexedDB.selectAll = function(callback){
+	var db = window.indexedDB.db;
+	var trans = db.transaction("lista", "readonly")
+	var req = trans.objectStore("lista").openCursor();
+
+	var result = [];
+	
+	function callback(els){
+		document.getElementById("list").innerHTML = "";
+		for(el in els){
+			document.getElementById("list").innerHTML = document.getElementById("list").innerHTML + "<li>" + els[el].id + ": " + els[el].text + "</li>"
+		}
+	}
+	
+	req.onsuccess = function(e){
+		var cursor = e.target.result;
+
+		if(cursor){
+			result.push(cursor.value)
+			cursor.continue();
+		} else{
+			if(callback){
+				callback(result)	
+			} else{
+				console.log(result)
+			}
+		}
+	}
+	req.onerror = function(e){
+		if(callback){
+			callback("ERROR: " + e)
+		}
+		else{
+			console.error("ERROR: " + e)
+		}
+	}
+}
+</script>
+</html>
