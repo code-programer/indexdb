@@ -90,6 +90,8 @@ indexedDB.selectAll = function(callback){
 	var result = [];
 	
 	function callback(els){
+		document.getElementById("st").value = "";
+		document.getElementById("si").value = "";
 		document.getElementById("list").innerHTML = "";
 		for(el in els){
 			document.getElementById("list").innerHTML = document.getElementById("list").innerHTML + "<li>" + els[el].id + ": " + els[el].text + "</li>"
